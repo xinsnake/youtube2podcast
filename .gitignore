@@ -1,0 +1,7 @@
+vendor/
+
+/data/**
+!/data/.gitkeep
+!/data/public
+/data/public/**
+!/data/public/.gitkeep
