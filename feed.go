@@ -16,7 +16,7 @@ type rssChannel struct {
 	Image       rssImage  `xml:"image"`
 	Language    string    `xml:"language"`
 	Link        string    `xml:"link"`
-	Items       []rssItem `xml:"channel>item"`
+	Items       []rssItem `xml:"item"`
 }
 
 type rssImage struct {

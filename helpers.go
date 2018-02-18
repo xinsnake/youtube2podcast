@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func handleStartupError(err error, message string) {
@@ -15,6 +16,15 @@ func handleStartupError(err error, message string) {
 	if err != nil {
 		log.Fatalf("%s: %v", message, err)
 	}
+}
+
+func formatPubDate(isoDate string) string {
+	t, err := time.Parse(time.RFC3339Nano, isoDate)
+	if err != nil {
+		log.Printf("Unable to convert pubDate: %v", err)
+		return ""
+	}
+	return t.Format(time.RFC1123)
 }
 
 func formatDuration(isoDuration string) string {

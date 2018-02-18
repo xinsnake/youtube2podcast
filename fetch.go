@@ -68,10 +68,10 @@ func startFetchLoop() {
 			it := rssItem{
 				Title:       video.Snippet.Title,
 				Description: video.Snippet.Description,
-				PubDate:     video.Snippet.PublishedAt,
+				PubDate:     formatPubDate(video.Snippet.PublishedAt),
 				Enclosure: rssEnclosure{
 					URL:    baseURL + "/" + fn,
-					Type:   "audio/mp3",
+					Type:   "audio/mpeg",
 					Length: length,
 				},
 				Duration: formatDuration(video.ContentDetails.Duration),
@@ -119,7 +119,6 @@ func processVideo(videoID string) (string, int64, error) {
 		"xinsnake/youtube2mp3",
 	)
 	output, err := cmd.CombinedOutput()
-	log.Printf("Command output: %s", string(output))
 	if err != nil {
 		log.Printf("Docker command failed")
 		return "", 0, errors.New(err.Error() + "\n" + string(output))
