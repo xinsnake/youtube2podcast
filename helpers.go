@@ -33,28 +33,28 @@ func formatDuration(isoDuration string) string {
 	if dayStr != "" {
 		day, err = strconv.Atoi(strings.Replace(dayStr, "D", "", -1))
 		if err != nil {
-			log.Printf("ERROR (soft): %v", err)
+			log.Printf("Unable to convert Day: %v", err)
 			return ""
 		}
 	}
 	if hourStr != "" {
 		hour, err = strconv.Atoi(strings.Replace(hourStr, "H", "", -1))
 		if err != nil {
-			log.Printf("ERROR (soft): %v", err)
+			log.Printf("Unable to convert Hour: %v", err)
 			return ""
 		}
 	}
 	if minuteStr != "" {
 		minute, err = strconv.Atoi(strings.Replace(minuteStr, "M", "", -1))
 		if err != nil {
-			log.Printf("ERROR (soft): %v", err)
+			log.Printf("Unable to convert Minute: %v", err)
 			return ""
 		}
 	}
 	if secondStr != "" {
 		second, err = strconv.Atoi(strings.Replace(secondStr, "S", "", -1))
 		if err != nil {
-			log.Printf("ERROR (soft): %v", err)
+			log.Printf("Unable to convert Second: %v", err)
 			return ""
 		}
 	}

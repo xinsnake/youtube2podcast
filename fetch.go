@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"time"
 )
@@ -34,10 +35,10 @@ func startFetchLoop() {
 		}
 
 		call := s.Search.List("id,snippet")
-		call.ChannelId(channelID).MaxResults(20).Order("date").Type("video")
+		call.ChannelId(channelID).MaxResults(10).Order("date").Type("video")
 		response, err := call.Do()
 		if err != nil {
-			log.Printf("ERROR: %v", err)
+			log.Printf("Unable to get channel detail: %v", err)
 			sleepTime = 60 * time.Minute
 			continue
 		}
@@ -50,7 +51,7 @@ func startFetchLoop() {
 			call2.Id(item.Id.VideoId)
 			response2, err := call2.Do()
 			if err != nil {
-				log.Printf("ERROR: %v", err)
+				log.Printf("Unable to get video detail: %v", err)
 				sleepTime = 60 * time.Minute
 				continue
 			}
@@ -59,7 +60,7 @@ func startFetchLoop() {
 
 			fn, length, err := processVideo(video.Id)
 			if err != nil {
-				log.Printf("ERROR: %v", err)
+				log.Printf("Unable to process video: %v", err)
 				sleepTime = 60 * time.Minute
 				continue
 			}
@@ -102,16 +103,25 @@ func processVideo(videoID string) (string, int64, error) {
 		return fn, info.Size(), nil
 	}
 
+	user, err := user.Current()
+	if err != nil {
+		return "", 0, err
+	}
 	cmd := exec.Command(
 		"docker",
 		"run",
 		"--rm",
 		"-e", "DOWNLOAD_URI=https://www.youtube.com/watch?v="+videoID,
+		"-v", "/etc/group:/etc/group:ro",
+		"-v", "/etc/passwd:/etc/passwd:ro",
 		"-v", filepath.Join(dataDir, "public", "mp3")+":"+"/data",
+		"-u", user.Uid,
 		"xinsnake/youtube2mp3",
 	)
 	output, err := cmd.CombinedOutput()
+	log.Printf("Command output: %s", string(output))
 	if err != nil {
+		log.Printf("Docker command failed")
 		return "", 0, errors.New(err.Error() + "\n" + string(output))
 	}
 	err = os.Rename(filepath.Join(dataDir, "public", "mp3", "output.mp3"), fullFn)
@@ -132,13 +142,13 @@ func saveFeedXML(ch rssChannel) {
 	}
 	b, err := xml.MarshalIndent(rr, "", "  ")
 	if err != nil {
-		log.Printf("ERROR: %v", err)
+		log.Printf("Unable to marshal XML: %v", err)
 		return
 	}
 	finalXML := xml.Header + string(b)
 	err = ioutil.WriteFile(filepath.Join(dataDir, "public", "feed.xml"), []byte(finalXML), 0644)
 	if err != nil {
-		log.Printf("ERROR (soft): %v", err)
+		log.Printf("Unable to write feed XML: %v", err)
 	}
 	log.Printf("Feed file saved to %s", filepath.Join(dataDir, "public", "feed.xml"))
 }
@@ -147,7 +157,7 @@ func cleanUpFiles(mp3Files map[string]bool) {
 	dataPath := filepath.Join(dataDir, "public", "mp3")
 	files, err := ioutil.ReadDir(dataPath)
 	if err != nil {
-		log.Printf("ERROR (soft): %v", err)
+		log.Printf("Unable to read directory to clean: %v", err)
 	}
 	for _, file := range files {
 		if mp3Files[file.Name()] {
@@ -156,7 +166,7 @@ func cleanUpFiles(mp3Files map[string]bool) {
 		log.Printf("Removing unused MP3 file %s", file.Name())
 		err = os.Remove(filepath.Join(dataDir, "public", "mp3", file.Name()))
 		if err != nil {
-			log.Printf("ERROR (soft): %v", err)
+			log.Printf("Unable to remove MP3 file: %v", err)
 		}
 	}
 }
