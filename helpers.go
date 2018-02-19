@@ -28,48 +28,28 @@ func formatPubDate(isoDate string) string {
 }
 
 func formatDuration(isoDuration string) string {
-	var err error
-
 	re := regexp.MustCompile("P(\\d+D)?T(\\d+H)?(\\d+M)?(\\d+S)?")
 	matches := re.FindAllStringSubmatch(isoDuration, -1)
 
-	dayStr := matches[0][1]
-	hourStr := matches[0][2]
-	minuteStr := matches[0][3]
-	secondStr := matches[0][4]
+	dayStr, hourStr, minuteStr, secondStr :=
+		matches[0][1], matches[0][2], matches[0][3], matches[0][4]
+	day, hour, minute, second :=
+		takeTimePart(dayStr, "D", "Day"),
+		takeTimePart(hourStr, "H", "Hour"),
+		takeTimePart(minuteStr, "M", "Minute"),
+		takeTimePart(secondStr, "S", "Second")
 
-	var day, hour, minute, second int
+	return fmt.Sprintf("%0.2d:%0.2d:%0.2d", hour+day*24, minute, second)
+}
 
-	if dayStr != "" {
-		day, err = strconv.Atoi(strings.Replace(dayStr, "D", "", -1))
-		if err != nil {
-			log.Printf("Unable to convert Day: %v", err)
-			return ""
-		}
+func takeTimePart(input string, tShort string, tLong string) int {
+	if input == "" {
+		return 0
 	}
-	if hourStr != "" {
-		hour, err = strconv.Atoi(strings.Replace(hourStr, "H", "", -1))
-		if err != nil {
-			log.Printf("Unable to convert Hour: %v", err)
-			return ""
-		}
+	output, err := strconv.Atoi(strings.Replace(input, tShort, "", -1))
+	if err != nil {
+		log.Printf("Unable to convert %s: %v", tLong, err)
+		return 0
 	}
-	if minuteStr != "" {
-		minute, err = strconv.Atoi(strings.Replace(minuteStr, "M", "", -1))
-		if err != nil {
-			log.Printf("Unable to convert Minute: %v", err)
-			return ""
-		}
-	}
-	if secondStr != "" {
-		second, err = strconv.Atoi(strings.Replace(secondStr, "S", "", -1))
-		if err != nil {
-			log.Printf("Unable to convert Second: %v", err)
-			return ""
-		}
-	}
-
-	hour = hour + day*24
-
-	return fmt.Sprintf("%0.2d:%0.2d:%0.2d", hour, minute, second)
+	return output
 }
