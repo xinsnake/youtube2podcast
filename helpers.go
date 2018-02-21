@@ -2,29 +2,18 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func handleStartupError(err error, message string) {
-	if message == "" {
-		message = "Error making API call"
-	}
-	if err != nil {
-		log.Fatalf("%s: %v", message, err)
-	}
-}
-
-func formatPubDate(isoDate string) string {
+func formatPubDate(isoDate string) (string, error) {
 	t, err := time.Parse(time.RFC3339Nano, isoDate)
 	if err != nil {
-		log.Printf("Unable to convert pubDate: %v", err)
-		return ""
+		return "", err
 	}
-	return t.Format(time.RFC1123)
+	return t.Format(time.RFC1123), nil
 }
 
 func formatDuration(isoDuration string) string {
@@ -48,7 +37,6 @@ func takeTimePart(input string, tShort string, tLong string) int {
 	}
 	output, err := strconv.Atoi(strings.Replace(input, tShort, "", -1))
 	if err != nil {
-		log.Printf("Unable to convert %s: %v", tLong, err)
 		return 0
 	}
 	return output

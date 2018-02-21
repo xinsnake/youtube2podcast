@@ -1,7 +1,6 @@
 vendor/
 
+y2p-config.json
+
 /data/**
-!/data/.gitkeep
-!/data/public
-/data/public/**
-!/data/public/.gitkeep
+!/data/index.html

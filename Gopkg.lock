@@ -2,34 +2,6 @@
 
 
 [[projects]]
-  name = "cloud.google.com/go"
-  packages = ["compute/metadata"]
-  revision = "767c40d6a2e058483c25fa193e963a22da17236d"
-  version = "v0.18.0"
-
-[[projects]]
-  name = "github.com/golang/protobuf"
-  packages = ["proto"]
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
-  version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hajimehoshi/go-mp3"
-  packages = [
-    ".",
-    "internal/bits",
-    "internal/consts",
-    "internal/frame",
-    "internal/frameheader",
-    "internal/huffman",
-    "internal/imdct",
-    "internal/maindata",
-    "internal/sideinfo"
-  ]
-  revision = "3c185f92b8dbceefa913b64cae634ba47f452769"
-
-[[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = [
@@ -40,47 +12,19 @@
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/oauth2"
-  packages = [
-    ".",
-    "google",
-    "internal",
-    "jws",
-    "jwt"
-  ]
-  revision = "543e37812f10c46c622c9575afd7ad22f22a12ba"
-
-[[projects]]
-  branch = "master"
   name = "google.golang.org/api"
   packages = [
     "gensupport",
     "googleapi",
     "googleapi/internal/uritemplates",
+    "googleapi/transport",
     "youtube/v3"
   ]
   revision = "c7a403bb5fe12fe4644bb956edd5cd677626120a"
 
-[[projects]]
-  name = "google.golang.org/appengine"
-  packages = [
-    ".",
-    "internal",
-    "internal/app_identity",
-    "internal/base",
-    "internal/datastore",
-    "internal/log",
-    "internal/modules",
-    "internal/remote_api",
-    "internal/urlfetch",
-    "urlfetch"
-  ]
-  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
-  version = "v1.0.0"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e926364bba933405a99f9b4f5d072e156c329939378fb68b5d134832463f704f"
+  inputs-digest = "f5240f1d3e6b2b1a04f2ece3f4aa48e84ac3120585b6254ed13899cbb75c9baa"
   solver-name = "gps-cdcl"
   solver-version = 1

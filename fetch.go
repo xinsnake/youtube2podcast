@@ -3,90 +3,143 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"time"
+
+	"github.com/xinsnake/youtube2podcast/config"
 )
 
-func startFetchLoop() {
-	for {
-		log.Printf("Start to process")
-		sleepTime := 15 * time.Minute
+const youtubeChannelURI = "https://www.youtube.com/channel/"
+const youtubeVideoURI = "https://www.youtube.com/watch?v="
 
-		ch := rssChannel{
-			Title:       c.Snippet.Title,
-			Author:      c.Snippet.CustomUrl,
-			Description: c.Snippet.Description,
-			Image: rssImage{
-				URL:   c.Snippet.Thumbnails.High.Url,
-				Link:  "https://www.youtube.com/channel/" + channelID,
-				Title: c.Snippet.Title,
-			},
-			Language: "en-us",
-			Link:     "https://www.youtube.com/channel/" + channelID,
-			Items:    []rssItem{},
+func fireOffFetchLoop() {
+	log.Printf("Fire off fetch loop")
+
+	for index, ch := range cfg.Channels {
+		log.Printf("Fire off channel %s", ch.ID)
+
+		if index != 0 {
+			rand.Seed(time.Now().UnixNano())
+			delay := rand.Intn(10)
+			log.Printf("Delay randomly for %d seconds", delay)
+			time.Sleep(time.Duration(delay) * time.Second)
 		}
 
-		call := s.Search.List("id,snippet")
-		call.ChannelId(channelID).MaxResults(10).Order("date").Type("video")
-		response, err := call.Do()
+		go fetchChannel(ch)
+	}
+}
+
+func fetchChannel(ch config.Channel) {
+	success := true
+
+	for {
+		if !success {
+			log.Printf("Detecte previous failure for channel %s, waiting for 1 interval", ch.ID)
+			time.Sleep(time.Duration(ch.RefreshInterval) * time.Second)
+		}
+
+		log.Printf("Start to process channel %s", ch.ID)
+
+		if ch.Retain > 50 {
+			log.Printf("Warning: channel %s retain greater than 50 is not supported yet, set to 50", ch.ID)
+			ch.Retain = 50
+		}
+
+		chListCall := yService.Channels.List("id,snippet").Id(ch.ChannelID).MaxResults(1)
+		chListResp, err := chListCall.Do()
 		if err != nil {
-			log.Printf("Unable to get channel detail: %v", err)
-			sleepTime = 60 * time.Minute
+			log.Printf("Error: unable to get channel %s: %v", ch.ID, err)
+			success = false
+			continue
+		}
+		channel := chListResp.Items[0]
+
+		searchListCall := yService.Search.List("id,snippet").
+			ChannelId(ch.ChannelID).MaxResults(int64(ch.Retain)).Order("date").Type("video")
+		searchListResponse, err := searchListCall.Do()
+		if err != nil {
+			log.Printf("Error: unable to get latest videos in channel %s: %v", ch.ChannelID, err)
+			success = false
 			continue
 		}
 
-		mp3Files := map[string]bool{}
+		rssCh := rssChannel{
+			Title:       channel.Snippet.Title,
+			Author:      channel.Snippet.CustomUrl,
+			Description: channel.Snippet.Description,
+			Image: rssImage{
+				URL:   channel.Snippet.Thumbnails.High.Url,
+				Link:  youtubeChannelURI + channel.Id,
+				Title: channel.Snippet.Title,
+			},
+			Language: "en-us",
+			Link:     youtubeChannelURI + channel.Id,
+			Items:    []rssItem{},
+		}
 
-		for _, item := range response.Items {
+		for _, item := range searchListResponse.Items {
 
-			call2 := s.Videos.List("id,snippet,contentDetails")
-			call2.Id(item.Id.VideoId)
-			response2, err := call2.Do()
+			videoListCall := yService.Videos.List("id,snippet,contentDetails").Id(item.Id.VideoId)
+			videoListResponse, err := videoListCall.Do()
 			if err != nil {
-				log.Printf("Unable to get video detail: %v", err)
-				sleepTime = 60 * time.Minute
+				log.Printf("Error: unable to get video detail %s => %s: %v",
+					ch.ChannelID, item.Id.VideoId, err)
+				success = false
 				continue
 			}
 
-			video := response2.Items[0]
+			video := videoListResponse.Items[0]
 
 			fn, length, err := processVideo(video.Id)
 			if err != nil {
-				log.Printf("Unable to process video: %v", err)
-				sleepTime = 60 * time.Minute
+				log.Printf("Error: unable to process video %s => %s: %v",
+					ch.ChannelID, item.Id.VideoId, err)
+				success = false
 				continue
 			}
 
-			it := rssItem{
+			pubDate, err := formatPubDate(video.Snippet.PublishedAt)
+			if err != nil {
+				log.Printf("Error: unable to process video %s => %s: %v",
+					ch.ChannelID, item.Id.VideoId, err)
+				success = false
+				continue
+			}
+
+			rssItem := rssItem{
 				Title:       video.Snippet.Title,
 				Description: video.Snippet.Description,
-				PubDate:     formatPubDate(video.Snippet.PublishedAt),
+				PubDate:     pubDate,
 				Enclosure: rssEnclosure{
-					URL:    baseURL + "/" + fn,
+					URL:    cfg.BaseURL + "/" + fn,
 					Type:   "audio/mpeg",
 					Length: length,
 				},
 				Duration: formatDuration(video.ContentDetails.Duration),
 				GUID:     item.Id.VideoId,
 			}
-			ch.Items = append(ch.Items, it)
 
-			mp3Files[fn] = true
+			rssCh.Items = append(rssCh.Items, rssItem)
 		}
 
-		saveFeedXML(ch)
-		cleanUpFiles(mp3Files)
+		err = saveFeedXML(ch.ID, rssCh)
+		if err != nil {
+			log.Printf("Error: to save channel feed XML %s: %v", ch.ChannelID, err)
+			success = false
+			continue
+		}
 
-		log.Printf("Sleeping for %d minutes", sleepTime/time.Minute)
-		time.Sleep(sleepTime)
+		success = true
+
+		log.Printf("Channel %s fetch sleeping for %d seconds", ch.ID, ch.RefreshInterval)
+		time.Sleep(time.Duration(ch.RefreshInterval) * time.Second)
 	}
 }
 
@@ -95,77 +148,47 @@ func processVideo(videoID string) (string, int64, error) {
 
 	h := sha1.New()
 	io.WriteString(h, videoID)
-	fn := fmt.Sprintf("%x.mp3", h.Sum(nil))
-	fullFn := filepath.Join(dataDir, "public", "mp3", fn)
+	videoHash := fmt.Sprintf("%x", h.Sum(nil))
 
-	info, err := os.Stat(fullFn)
+	mp3FileName := fmt.Sprintf("%s.mp3", videoHash)
+	mp3FullPath := filepath.Join(cfg.DataDir, mp3FileName)
+
+	info, err := os.Stat(mp3FullPath)
 	if !os.IsNotExist(err) {
-		return fn, info.Size(), nil
+		return mp3FileName, info.Size(), nil
 	}
 
-	user, err := user.Current()
+	videoURI := youtubeVideoURI + videoID
+	videoFullPath := filepath.Join(cfg.DataDir, fmt.Sprintf("%s.%%(ext)s", videoHash))
+
+	youtubeDlCmd := exec.Command(
+		cfg.Exec.Youtubedl,
+		"-o", videoFullPath,
+		"-x", "--audio-format", "mp3",
+		videoURI)
+	_, err = youtubeDlCmd.CombinedOutput()
 	if err != nil {
 		return "", 0, err
 	}
-	cmd := exec.Command(
-		"docker",
-		"run",
-		"--rm",
-		"-e", "DOWNLOAD_URI=https://www.youtube.com/watch?v="+videoID,
-		"-v", "/etc/group:/etc/group:ro",
-		"-v", "/etc/passwd:/etc/passwd:ro",
-		"-v", filepath.Join(dataDir, "public", "mp3")+":"+"/data",
-		"-u", user.Uid,
-		"xinsnake/youtube2mp3",
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Docker command failed")
-		return "", 0, errors.New(err.Error() + "\n" + string(output))
-	}
-	err = os.Rename(filepath.Join(dataDir, "public", "mp3", "output.mp3"), fullFn)
-	log.Printf("File saved to %s", fullFn)
 
-	info2, err := os.Stat(fullFn)
+	info, err = os.Stat(mp3FullPath)
 	if os.IsNotExist(err) {
-		return fn, 0, err
+		return mp3FileName, 0, err
 	}
-	return fn, info2.Size(), nil
+	return mp3FileName, info.Size(), nil
 }
 
-func saveFeedXML(ch rssChannel) {
-	rr := rssRoot{
+func saveFeedXML(ID string, rssCh rssChannel) error {
+	rssRt := rssRoot{
 		Version:     "2.0",
 		XmlnsItunes: "http://www.itunes.com/dtds/podcast-1.0.dtd",
-		Channel:     ch,
+		Channel:     rssCh,
 	}
-	b, err := xml.MarshalIndent(rr, "", "  ")
+	b, err := xml.MarshalIndent(rssRt, "", "  ")
 	if err != nil {
-		log.Printf("Unable to marshal XML: %v", err)
-		return
+		return err
 	}
 	finalXML := xml.Header + string(b)
-	err = ioutil.WriteFile(filepath.Join(dataDir, "public", "feed.xml"), []byte(finalXML), 0644)
-	if err != nil {
-		log.Printf("Unable to write feed XML: %v", err)
-	}
-	log.Printf("Feed file saved to %s", filepath.Join(dataDir, "public", "feed.xml"))
-}
-
-func cleanUpFiles(mp3Files map[string]bool) {
-	dataPath := filepath.Join(dataDir, "public", "mp3")
-	files, err := ioutil.ReadDir(dataPath)
-	if err != nil {
-		log.Printf("Unable to read directory to clean: %v", err)
-	}
-	for _, file := range files {
-		if mp3Files[file.Name()] {
-			continue
-		}
-		log.Printf("Removing unused MP3 file %s", file.Name())
-		err = os.Remove(filepath.Join(dataDir, "public", "mp3", file.Name()))
-		if err != nil {
-			log.Printf("Unable to remove MP3 file: %v", err)
-		}
-	}
+	finalXMLPath := filepath.Join(cfg.DataDir, fmt.Sprintf("feed-%s.xml", ID))
+	return ioutil.WriteFile(finalXMLPath, []byte(finalXML), 0644)
 }
