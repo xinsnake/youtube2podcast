@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/xinsnake/youtube2podcast/config"
@@ -37,6 +38,16 @@ func fireOffFetchLoop() {
 }
 
 func fetchChannel(ch config.Channel) {
+	if ch.Retain > 50 {
+		log.Printf("Warning: channel %s retain greater than 50 is not supported yet, set to 50", ch.ID)
+		ch.Retain = 50
+	}
+
+	re := regexp.MustCompile("^[a-z]+$")
+	if !re.MatchString(ch.ID) {
+		log.Printf("Warning: channel %s contains none a-z charactors, you may encounter erros", ch.ID)
+	}
+
 	success := true
 
 	for {
@@ -46,11 +57,6 @@ func fetchChannel(ch config.Channel) {
 		}
 
 		log.Printf("Start to process channel %s", ch.ID)
-
-		if ch.Retain > 50 {
-			log.Printf("Warning: channel %s retain greater than 50 is not supported yet, set to 50", ch.ID)
-			ch.Retain = 50
-		}
 
 		chListCall := yService.Channels.List("id,snippet").Id(ch.ChannelID).MaxResults(1)
 		chListResp, err := chListCall.Do()
@@ -84,6 +90,8 @@ func fetchChannel(ch config.Channel) {
 			Items:    []rssItem{},
 		}
 
+		mp3s := make(map[string]bool)
+
 		for _, item := range searchListResponse.Items {
 
 			videoListCall := yService.Videos.List("id,snippet,contentDetails").Id(item.Id.VideoId)
@@ -97,7 +105,7 @@ func fetchChannel(ch config.Channel) {
 
 			video := videoListResponse.Items[0]
 
-			fn, length, err := processVideo(video.Id)
+			fn, length, err := processVideo(ch.ID, video.Id)
 			if err != nil {
 				log.Printf("Error: unable to process video %s => %s: %v",
 					ch.ChannelID, item.Id.VideoId, err)
@@ -127,11 +135,19 @@ func fetchChannel(ch config.Channel) {
 			}
 
 			rssCh.Items = append(rssCh.Items, rssItem)
+			mp3s[fn] = true
 		}
 
 		err = saveFeedXML(ch.ID, rssCh)
 		if err != nil {
-			log.Printf("Error: to save channel feed XML %s: %v", ch.ChannelID, err)
+			log.Printf("Error: unable to save channel feed XML %s: %v", ch.ChannelID, err)
+			success = false
+			continue
+		}
+
+		err = cleanUp(ch.ID, mp3s)
+		if err != nil {
+			log.Printf("Error: unable to clean up unused files %s: %v", ch.ChannelID, err)
 			success = false
 			continue
 		}
@@ -143,14 +159,14 @@ func fetchChannel(ch config.Channel) {
 	}
 }
 
-func processVideo(videoID string) (string, int64, error) {
+func processVideo(chID, videoID string) (string, int64, error) {
 	log.Printf("Processing Video ID: %s", videoID)
 
 	h := sha1.New()
 	io.WriteString(h, videoID)
 	videoHash := fmt.Sprintf("%x", h.Sum(nil))
 
-	mp3FileName := fmt.Sprintf("%s.mp3", videoHash)
+	mp3FileName := fmt.Sprintf("%s-%s.mp3", chID, videoHash)
 	mp3FullPath := filepath.Join(cfg.DataDir, mp3FileName)
 
 	info, err := os.Stat(mp3FullPath)
@@ -159,7 +175,7 @@ func processVideo(videoID string) (string, int64, error) {
 	}
 
 	videoURI := youtubeVideoURI + videoID
-	videoFullPath := filepath.Join(cfg.DataDir, fmt.Sprintf("%s.%%(ext)s", videoHash))
+	videoFullPath := filepath.Join(cfg.DataDir, fmt.Sprintf("%s-%s.%%(ext)s", chID, videoHash))
 
 	youtubeDlCmd := exec.Command(
 		cfg.Exec.Youtubedl,
@@ -178,7 +194,9 @@ func processVideo(videoID string) (string, int64, error) {
 	return mp3FileName, info.Size(), nil
 }
 
-func saveFeedXML(ID string, rssCh rssChannel) error {
+func saveFeedXML(chID string, rssCh rssChannel) error {
+	log.Printf("Saving feed XML file for channel %s", chID)
+
 	rssRt := rssRoot{
 		Version:     "2.0",
 		XmlnsItunes: "http://www.itunes.com/dtds/podcast-1.0.dtd",
@@ -189,6 +207,28 @@ func saveFeedXML(ID string, rssCh rssChannel) error {
 		return err
 	}
 	finalXML := xml.Header + string(b)
-	finalXMLPath := filepath.Join(cfg.DataDir, fmt.Sprintf("feed-%s.xml", ID))
+	finalXMLPath := filepath.Join(cfg.DataDir, fmt.Sprintf("feed-%s.xml", chID))
 	return ioutil.WriteFile(finalXMLPath, []byte(finalXML), 0644)
+}
+
+func cleanUp(chID string, mp3s map[string]bool) error {
+	log.Printf("Cleaning unused mp3 files for channel %s", chID)
+
+	files, err := ioutil.ReadDir(cfg.DataDir)
+	if err != nil {
+		return err
+	}
+	re := regexp.MustCompile(fmt.Sprintf("^%s-[a-f0-9]+\\.mp3$", chID))
+	for _, file := range files {
+		fileName := file.Name()
+		if !re.MatchString(fileName) || mp3s[fileName] {
+			continue
+		}
+		log.Printf("Removing unused MP3 file %s", fileName)
+		err = os.Remove(filepath.Join(cfg.DataDir, fileName))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
