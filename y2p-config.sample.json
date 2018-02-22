@@ -1,11 +1,11 @@
 {
     "baseUrl": "https://example.com",
     "port": "14295",
-    "dataDir": "./data",
+    "dataDir": "/data",
     "googleApiKey": "your_google_api_key",
     "exec": {
         "ffmpeg": "/usr/bin/ffmpeg",
-        "youtubedl": "/usr/bin/youtube-dl"
+        "youtubedl": "/usr/local/bin/youtube-dl"
     },
     "channels": [
         {
