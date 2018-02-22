@@ -14,7 +14,7 @@ import (
 	youtube "google.golang.org/api/youtube/v3"
 )
 
-const envConfigPath = "Y2M_CONFIG_PATH"
+const envConfigPath = "Y2P_CONFIG_PATH"
 
 var cfg config.Config
 var yService *youtube.Service

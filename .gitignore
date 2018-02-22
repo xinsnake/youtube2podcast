@@ -1,6 +1,9 @@
 vendor/
 
+y2p
 y2p-config.json
+y2p-config.local.json
+y2p-config.docker.json
 
 /data/**
 !/data/index.html
