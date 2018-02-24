@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -80,7 +82,51 @@ func testDependencyApplications() {
 func serveStaticContent() {
 	log.Printf("Start serving static assets")
 
-	http.Handle("/", http.FileServer(http.Dir(cfg.DataDir)))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" || r.URL.Path == "index.html" {
+			indexFile := filepath.Join(cfg.StaticDir, "index.html")
+			tmpl, err := template.ParseFiles(indexFile)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(fmt.Sprintf("Unable to parse template: %v", err)))
+				return
+			}
+			feeds, err := getCurrentFeeds()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(fmt.Sprintf("Unable to parse feeds: %v", err)))
+				return
+			}
+			var buf bytes.Buffer
+			err = tmpl.Execute(&buf, struct {
+				Config config.Config
+				Feeds  []rssRoot
+			}{
+				cfg,
+				feeds,
+			})
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(fmt.Sprintf("Unable to execute template: %v", err)))
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write(buf.Bytes())
+			return
+		}
+		if r.URL.Path == "/favicon.ico" || r.URL.Path == "/logo.png" {
+			staticPath := filepath.Join(cfg.StaticDir, r.URL.Path)
+			http.ServeFile(w, r, staticPath)
+			return
+		}
+		path := filepath.Join(cfg.DataDir, r.URL.Path)
+		if f, err := os.Stat(path); err == nil && !f.IsDir() {
+			http.ServeFile(w, r, path)
+			return
+		}
+		http.NotFound(w, r)
+	})
+
 	err := http.ListenAndServe(fmt.Sprintf(":%s", cfg.Port), nil)
 	if err != nil {
 		log.Fatalf("Unable to listen to port %s: %v", cfg.Port, err)

@@ -8,6 +8,7 @@ import (
 type Config struct {
 	BaseURL      string `json:"baseUrl"`
 	Port         string `json:"port"`
+	StaticDir    string `json:"staticDir"`
 	DataDir      string `json:"dataDir"`
 	GoogleAPIKey string `json:"googleApiKey"`
 	Exec         struct {

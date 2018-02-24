@@ -77,6 +77,7 @@ func fetchChannel(ch config.Channel) {
 		}
 
 		rssCh := rssChannel{
+			ID:          ch.ID,
 			Title:       channel.Snippet.Title,
 			Author:      channel.Snippet.CustomUrl,
 			Description: channel.Snippet.Description,

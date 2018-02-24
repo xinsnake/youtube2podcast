@@ -18,6 +18,8 @@ or you can use docker
 
 ## Todo
 
-- --Directory clean up--
+- Better home page
+- Removed feeds clean up
 - Clean shutdown
-- Put the application in container
+- ~~Directory clean up~~
+- ~~Put the application in container~~

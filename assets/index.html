@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700" rel="stylesheet">
+    <title>YOUTUBE 2 PODCAST</title>
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-size: 20px;
+            font-family: 'Lato', sans-serif;
+            font-weight: 300;
+            color: #333333;
+        }
+        h1, h2, h3 {
+            font-weight: 300;
+            margin: 0 0 .2em;
+        }
+        img {
+            max-width: 100%;
+        }
+        a {
+            color: #666666;
+            text-decoration: none;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .logo {
+            padding-top: 80px;
+            padding-bottom: 80px;
+        }
+        .logo img {
+            width: 130px;
+            height: 130px;
+            margin: 0 auto;
+            display: block;
+        }
+        .podcast {
+            display: flex;
+            margin-bottom: 20px
+        }
+        .left {
+            width: 120px;
+        }
+        .left img {
+            border-radius: 5px;
+            width: 120px;
+            height: 120px;
+        }
+        .right {
+            padding-left: 20px;
+            width: calc(100% - 130px);
+        }
+        .feed-link {
+            padding-bottom: .8em;
+        }
+        .episodes {
+            font-size: 16px;
+            margin-left: 0;
+            padding-left: 20px;
+        }
+        .episode {
+            padding-bottom: .2em;
+        }
+        .date {
+            margin-right: 4px;
+            color: #ffffff;
+            background-color: #999999;
+            padding: 1px 5px;
+            border-radius: 3px;
+            display: inline-block;
+            font-weight: 400;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="/logo.png" alt="youtube2podcast" />
+        </div>
+        <ul class="podcasts">
+            {{ range .Feeds }}
+                <li class="podcast">
+                    <div class="left">
+                        <img src="{{ .Channel.Image.URL }}" />
+                    </div>
+                    <div class="right">
+                        <h1>{{ .Channel.Title }}</h1>
+                        <div class="feed-link">
+                            <a href="{{ $.Config.BaseURL }}/feed-{{ .Channel.ID }}.xml">
+                                {{ $.Config.BaseURL }}/feed-{{ .Channel.ID }}.xml
+                            </a>
+                        </div>
+                        <ul class="episodes">
+                            {{ range .Channel.Items }}
+                            <li class="episode">
+                                <span class="date">{{ .PubDate }}</span> {{ .Title }}
+                            {{ end }}
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            {{ end }}
+        </ul>
+    </div>
+    <script>
+        (function() {
+            var dateElems = document.getElementsByClassName("date");
+            for (var i = 0; i < dateElems.length; i++) {
+                var dateRaw = dateElems[i].innerHTML;
+                var datePretty = moment(dateRaw).fromNow();
+                dateElems[i].innerHTML = datePretty;
+            }
+        })();
+    </script>
+</body>
+</html>
