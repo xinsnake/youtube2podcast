@@ -5,14 +5,14 @@ RUN apk update && apk upgrade && \
     apk add ffmpeg && \
     mkdir /lib64 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2
 
-# put youtube-dl
-ADD https://yt-dl.org/downloads/latest/youtube-dl  /usr/local/bin/youtube-dl
-
 # put y2p
 COPY y2p /usr/local/bin/y2p
 
 # put default assets
-COPY assets /assets
+ADD assets /assets
+
+# put youtube-dl
+ADD https://yt-dl.org/downloads/latest/youtube-dl  /usr/local/bin/youtube-dl
 
 # modify permission to allow execute
 RUN adduser -u 14295 -DH -s /bin/sh y2p && \
