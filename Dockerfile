@@ -11,6 +11,9 @@ ADD https://yt-dl.org/downloads/latest/youtube-dl  /usr/local/bin/youtube-dl
 # put y2p
 COPY y2p /usr/local/bin/y2p
 
+# put default assets
+COPY assets /assets
+
 # modify permission to allow execute
 RUN adduser -u 14295 -DH -s /bin/sh y2p && \
     mkdir /data && chown -R y2p:y2p /data && \
