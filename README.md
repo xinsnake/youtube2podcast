@@ -17,8 +17,8 @@ Make YouTube channels to become MP3 PodCast feeds
 or you can use docker
 
 1. `docker run -d -v $(pwd)/y2p-config.sample.json:/y2p-config.json:ro -p 14295:14295 xinsnake/youtube2podcast`
-1.1 Use `-v $(pwd)/assets:/assets:ro` if you want to change the template or styling
-1.1 Use `-v $(pwd)/data:/data:raw` if you want to change data storage location
+* Use `-v $(pwd)/assets:/assets:ro` if you want to change the template or styling
+* Use `-v $(pwd)/data:/data:raw` if you want to change data storage location
 
 ## Todo
 
