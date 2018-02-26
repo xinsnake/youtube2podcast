@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400" rel="stylesheet">
     <title>YOUTUBE 2 PODCAST</title>
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
@@ -18,6 +18,8 @@
             font-family: 'Lato', sans-serif;
             font-weight: 300;
             color: #333333;
+            background-color: #ffffff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='a' gradientUnits='userSpaceOnUse' x1='100' y1='33' x2='100' y2='-3'%3E%3Cstop offset='0' stop-color='%23000' stop-opacity='0.06'/%3E%3Cstop offset='1' stop-color='%23000' stop-opacity='0.06'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' gradientUnits='userSpaceOnUse' x1='100' y1='135' x2='100' y2='97'%3E%3Cstop offset='0' stop-color='%23000' stop-opacity='0.06'/%3E%3Cstop offset='1' stop-color='%23000' stop-opacity='0.06'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill='%23cccccc' fill-opacity='0.06'%3E%3Crect x='100' width='100' height='100'/%3E%3Crect y='100' width='100' height='100'/%3E%3C/g%3E%3Cg fill-opacity='0.06'%3E%3Cpolygon fill='url(%23a)' points='100%2C30 0%2C0 200%2C0'/%3E%3Cpolygon fill='url(%23b)' points='100%2C100 0%2C130 0%2C100 200%2C100 200%2C130'/%3E%3C/g%3E%3C/svg%3E");
         }
         h1, h2, h3 {
             font-weight: 300;
@@ -27,17 +29,19 @@
             max-width: 100%;
         }
         a {
-            color: #666666;
+            color: #bd0f0f;
             text-decoration: none;
         }
         .container {
             max-width: 800px;
             width: 100%;
             margin: 0 auto;
+            padding-left: 10px;
+            padding-right: 10px;
         }
         .logo {
-            padding-top: 80px;
-            padding-bottom: 80px;
+            padding-top: 50px;
+            padding-bottom: 30px;
         }
         .logo img {
             width: 130px;
@@ -45,29 +49,40 @@
             margin: 0 auto;
             display: block;
         }
+        .podcasts {
+            margin-left: 0;
+            padding-left: 0;
+        }
         .podcast {
             display: flex;
-            margin-bottom: 20px
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #dddddd;
         }
         .left {
-            width: 120px;
+            width: 80px;
+            padding-top: 9px;
         }
         .left img {
             border-radius: 5px;
-            width: 120px;
-            height: 120px;
+            width: 80px;
+            height: 80px;
         }
         .right {
             padding-left: 20px;
-            width: calc(100% - 130px);
+            width: calc(100% - 100px);
         }
         .feed-link {
             padding-bottom: .8em;
         }
+        .feed-link a {
+            word-break: break-all;
+        }
         .episodes {
             font-size: 16px;
             margin-left: 0;
-            padding-left: 20px;
+            padding-left: 0;
+            list-style: none;
         }
         .episode {
             padding-bottom: .2em;
@@ -76,20 +91,25 @@
         .date {
             margin-right: 4px;
             color: #ffffff;
-            background-color: #999999;
+            background-color: #666666;
             padding: 1px 5px;
             border-radius: 3px;
             display: inline-block;
             font-weight: 400;
             font-size: 14px;
+            line-height: 1.3em;
+        }
+        footer {
+            font-size: 13px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">
+        <header class="logo">
             <img src="/logo.png" alt="youtube2podcast" />
-        </div>
+        </header>
         <ul class="podcasts">
             {{ range .Feeds }}
                 <li class="podcast">
@@ -100,7 +120,7 @@
                         <h1>{{ .Channel.Title }}</h1>
                         <div class="feed-link">
                             <a href="{{ $.Config.BaseURL }}/feed-{{ .Channel.ID }}.xml">
-                                {{ $.Config.BaseURL }}/feed-{{ .Channel.ID }}.xml
+                                🔗&nbsp;&nbsp;{{ $.Config.BaseURL }}/feed-{{ .Channel.ID }}.xml
                             </a>
                         </div>
                         <ul class="episodes">
@@ -114,7 +134,14 @@
                 </li>
             {{ end }}
         </ul>
+        <footer>
+            All content on the site are from YouTube.
+        </footer>
     </div>
+    <a href="https://github.com/xinsnake/youtube2podcast">
+        <img style="position: absolute; top: 0; right: 0; border: 0;"
+        src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png">
+    </a>
     <script>
         (function() {
             var dateElems = document.getElementsByClassName("date");
