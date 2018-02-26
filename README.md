@@ -14,6 +14,7 @@ If you want to run it directly, you need to install the following executables:
 
 Then follow the instructions:
 
+1. Go to the Release section and download the compiled binary (or compile from source yourself if you are not on Linux 64bit)
 1. Edit the `y2p-config.sample.json` file
 1. Set environment variable `Y2P_CONFIG_PATH` to point ot the configuration file
 1. Run the application
@@ -27,6 +28,7 @@ Then follow the instructions:
 
 ## Todo
 
+* Compile multiple platforms
 * Removed feeds clean up
 * Clean shutdown
 * ~~Better home page~~
