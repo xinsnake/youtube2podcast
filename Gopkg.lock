@@ -2,29 +2,25 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "golang.org/x/net"
-  packages = [
-    "context",
-    "context/ctxhttp"
-  ]
-  revision = "136a25c244d3019482a795d728110278d6ba09a4"
-
-[[projects]]
-  branch = "master"
+  digest = "1:e17e256f9e89b537659aa4bac04b0d0ed194f6b46bef0110b064fb278ceeef71"
   name = "google.golang.org/api"
   packages = [
     "gensupport",
     "googleapi",
     "googleapi/internal/uritemplates",
     "googleapi/transport",
-    "youtube/v3"
+    "youtube/v3",
   ]
-  revision = "c7a403bb5fe12fe4644bb956edd5cd677626120a"
+  pruneopts = "UT"
+  revision = "e742f5a8defa1f9f5d723dfa04c962e680dc33f0"
+  version = "v0.2.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f5240f1d3e6b2b1a04f2ece3f4aa48e84ac3120585b6254ed13899cbb75c9baa"
+  input-imports = [
+    "google.golang.org/api/googleapi/transport",
+    "google.golang.org/api/youtube/v3",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
