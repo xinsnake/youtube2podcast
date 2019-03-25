@@ -67,9 +67,9 @@ func fetchChannel(ch config.Channel) {
 		}
 		channel := chListResp.Items[0]
 
-		searchListCall := yService.Search.List("id,snippet").
-			ChannelId(ch.ChannelID).MaxResults(int64(ch.Retain)).Order("date").Type("video")
-		searchListResponse, err := searchListCall.Do()
+		activitiesListCall := yService.Activities.List("id,snippet,contentDetails").
+			ChannelId(ch.ChannelID).MaxResults(int64(ch.Retain))
+		activitiesListResponse, err := activitiesListCall.Do()
 		if err != nil {
 			log.Printf("Error: unable to get latest videos in channel %s: %v", ch.ChannelID, err)
 			success = false
@@ -93,13 +93,24 @@ func fetchChannel(ch config.Channel) {
 
 		mp3s := make(map[string]bool)
 
-		for _, item := range searchListResponse.Items {
+		for _, item := range activitiesListResponse.Items {
 
-			videoListCall := yService.Videos.List("id,snippet,contentDetails").Id(item.Id.VideoId)
+			videoID := ""
+			if item.Snippet.Type == "upload" {
+				videoID = item.ContentDetails.Upload.VideoId
+			} else if item.Snippet.Type == "playlistItem" {
+				videoID = item.ContentDetails.PlaylistItem.ResourceId.VideoId
+			} else {
+				log.Printf("Error: unable to recognize activity %s => %v: %v",
+					ch.ChannelID, item, err)
+				continue
+			}
+
+			videoListCall := yService.Videos.List("id,snippet,contentDetails").Id(videoID)
 			videoListResponse, err := videoListCall.Do()
 			if err != nil {
 				log.Printf("Error: unable to get video detail %s => %s: %v",
-					ch.ChannelID, item.Id.VideoId, err)
+					ch.ChannelID, videoID, err)
 				success = false
 				continue
 			}
@@ -109,7 +120,7 @@ func fetchChannel(ch config.Channel) {
 			fn, length, err := processVideo(ch.ID, video.Id)
 			if err != nil {
 				log.Printf("Error: unable to process video %s => %s: %v",
-					ch.ChannelID, item.Id.VideoId, err)
+					ch.ChannelID, videoID, err)
 				success = false
 				continue
 			}
@@ -117,7 +128,7 @@ func fetchChannel(ch config.Channel) {
 			pubDate, err := formatPubDate(video.Snippet.PublishedAt)
 			if err != nil {
 				log.Printf("Error: unable to process video %s => %s: %v",
-					ch.ChannelID, item.Id.VideoId, err)
+					ch.ChannelID, videoID, err)
 				success = false
 				continue
 			}
@@ -132,7 +143,7 @@ func fetchChannel(ch config.Channel) {
 					Length: length,
 				},
 				Duration: formatDuration(video.ContentDetails.Duration),
-				GUID:     item.Id.VideoId,
+				GUID:     videoID,
 			}
 
 			rssCh.Items = append(rssCh.Items, rssItem)
