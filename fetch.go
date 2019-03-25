@@ -68,7 +68,7 @@ func fetchChannel(ch config.Channel) {
 		channel := chListResp.Items[0]
 
 		activitiesListCall := yService.Activities.List("id,snippet,contentDetails").
-			ChannelId(ch.ChannelID).MaxResults(int64(ch.Retain))
+			ChannelId(ch.ChannelID).MaxResults(50) // TODO: this will not be enough if you want a lot
 		activitiesListResponse, err := activitiesListCall.Do()
 		if err != nil {
 			log.Printf("Error: unable to get latest videos in channel %s: %v", ch.ChannelID, err)
@@ -93,16 +93,13 @@ func fetchChannel(ch config.Channel) {
 
 		mp3s := make(map[string]bool)
 
+		retainCount := 0
 		for _, item := range activitiesListResponse.Items {
 
 			videoID := ""
 			if item.Snippet.Type == "upload" {
 				videoID = item.ContentDetails.Upload.VideoId
-			} else if item.Snippet.Type == "playlistItem" {
-				videoID = item.ContentDetails.PlaylistItem.ResourceId.VideoId
 			} else {
-				log.Printf("Error: unable to recognize activity %s => %v: %v",
-					ch.ChannelID, item, err)
 				continue
 			}
 
@@ -148,6 +145,11 @@ func fetchChannel(ch config.Channel) {
 
 			rssCh.Items = append(rssCh.Items, rssItem)
 			mp3s[fn] = true
+
+			retainCount++
+			if retainCount == ch.Retain {
+				break
+			}
 		}
 
 		err = saveFeedXML(ch.ID, rssCh)
