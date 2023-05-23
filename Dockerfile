@@ -12,7 +12,7 @@ COPY y2p /usr/local/bin/y2p
 ADD assets /assets
 
 # put youtube-dl
-ADD https://yt-dl.org/downloads/latest/youtube-dl  /usr/local/bin/youtube-dl
+ADD https://github.com/ytdl-patched/youtube-dl/releases/download/2023.05.23.19419/youtube-dl  /usr/local/bin/youtube-dl
 
 # modify permission to allow execute
 RUN adduser -u 14295 -DH -s /bin/sh y2p && \
